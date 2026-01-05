@@ -3,3 +3,6 @@
 node_modules/
 __pycache__/
     這樣當您執行 `git add .` 時，Git 就會自動忽略這些檔案。
+
+
+    
