@@ -1,0 +1,18 @@
+# 进阶版所有依赖
+fastapi>=0.124.1
+uvicorn[standard]>=0.27.0
+pydantic>=2.8.2
+python-multipart>=0.0.9
+pyyaml>=6.0.1
+numpy>=1.26.4
+sympy>=1.12
+matplotlib>=3.8.4
+sqlalchemy>=2.0.31
+tinydb>=4.8.0
+python-dotenv>=1.0.1
+
+# 开发调试工具
+pytest>=7.4.4  # 单元测试
+httpx>=0.26.0  # 测试API请求
+black>=24.4.2  # 代码格式化
+flake8>=7.0.0  # 代码检查

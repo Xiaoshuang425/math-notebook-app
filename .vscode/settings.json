@@ -1,0 +1,4 @@
+{
+  "python.defaultInterpreterPath": "C:\\Users\\user\\miniconda3\\python.exe",
+  "python.analysis.extraPaths": ["./backend"]
+}
