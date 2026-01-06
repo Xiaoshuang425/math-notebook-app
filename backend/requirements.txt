@@ -10,6 +10,8 @@ matplotlib>=3.8.4
 sqlalchemy>=2.0.31
 tinydb>=4.8.0
 python-dotenv>=1.0.1
+requests
+
 
 # 开发调试工具
 pytest>=7.4.4  # 单元测试
