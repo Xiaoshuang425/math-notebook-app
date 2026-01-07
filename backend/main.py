@@ -14,10 +14,9 @@ load_dotenv()
 
 app = FastAPI(
     title="KidAni Math AI Backend",
-    version="3.5.0"
+    version="3.9.0"
 )
 
-# 強化 CORS 設定
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -26,13 +25,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# API 配置
 DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "").strip()
 SORA_API_KEY = os.environ.get("SORA_API_KEY", "").strip()
 DEEPSEEK_BASE_URL = "https://api.deepseek.com/v1"
 SORA_BASE_URL = "https://grsai.dakka.com.cn"
 
-# 全域任務狀態存儲 (生產環境建議使用 Redis)
+# 任務儲存字典
 task_results = {}
 
 class VideoRequest(BaseModel):
@@ -51,35 +49,52 @@ def get_character_desc(name: str):
     return mapping.get(name, "a cute 3D educational character")
 
 async def poll_video_url(task_id: str, headers: dict):
-    """向 Sora API 輪詢影片結果"""
-    for i in range(40):  # 最多等待約 6-7 分鐘
-        await asyncio.sleep(10)
+    """靈敏輪詢：支援長達 10 分鐘等待"""
+    print(f"開始輪詢 Sora 任務 ID: {task_id}")
+    for i in range(120): 
+        await asyncio.sleep(8) # 稍微拉長輪詢間隔，減少對 API 的負擔
         try:
             res = requests.post(
                 f"{SORA_BASE_URL}/v1/draw/result", 
                 headers=headers, 
                 json={"id": task_id}, 
-                timeout=15
+                timeout=30 
             )
+            if res.status_code != 200:
+                continue
+                
             data = res.json()
-            # 兼容不同 API 回傳格式
             res_obj = data.get("data") if isinstance(data.get("data"), dict) else data
             results = res_obj.get("results")
             
             if results and len(results) > 0:
-                return results[0].get("url")
+                url = results[0].get('url')
+                if url:
+                    print(f"影片生成成功: {url}")
+                    return url
             
             status = str(res_obj.get("status", "")).lower()
+            if status in ["waiting", "processing", "pending", "none", "running"]:
+                if i % 3 == 0: print(f"任務 {task_id} 處理中... ({i+1}/120)")
+                continue
+            
             if status in ["failed", "error"]:
+                print(f"Sora 回報失敗狀態: {status}")
                 return None
-        except:
+                
+        except Exception:
             continue
+            
     return None
 
 async def background_generate_course(request: VideoRequest, internal_task_id: str):
-    """核心背景任務：生成劇本並調用 Sora"""
+    """背景執行緒：處理繁重的生成任務"""
     try:
-        # 1. 使用 DeepSeek 生成劇本
+        print(f"--- 啟動背景製作: {request.topic} ---")
+        
+        # 1. 生成劇本 (DeepSeek)
+        task_results[internal_task_id] = {"status": "processing", "message": "正在規劃教學劇本..."}
+        
         headers_ds = {"Authorization": f"Bearer {DEEPSEEK_API_KEY}", "Content-Type": "application/json"}
         ds_payload = {
             "model": "deepseek-chat",
@@ -90,70 +105,92 @@ async def background_generate_course(request: VideoRequest, internal_task_id: st
             "response_format": {"type": "json_object"}
         }
         
-        ds_res = requests.post(f"{DEEPSEEK_BASE_URL}/chat/completions", headers=headers_ds, json=ds_payload, timeout=30)
+        ds_res = requests.post(f"{DEEPSEEK_BASE_URL}/chat/completions", headers=headers_ds, json=ds_payload, timeout=60)
         script_data = ds_res.json()["choices"][0]["message"]["content"]
         scenes = json.loads(script_data).get("scenes", [])
+        print(f"劇本完成，準備提交影片...")
 
-        # 2. 遍歷場景生成影片
+        # 2. 提交影片請求
         final_course = []
         headers_sora = {"Authorization": f"Bearer {SORA_API_KEY}", "Content-Type": "application/json"}
         char_desc = get_character_desc(request.character)
 
-        for scene in scenes:
-            prompt = f"{request.style} animation, {char_desc}, {scene['visual_prompt']}, vibrant colors."
-            
-            # 提交影片任務
-            submit_res = requests.post(
-                f"{SORA_BASE_URL}/v1/video/sora-video",
-                headers=headers_sora,
-                json={"model": "sora-2", "prompt": prompt},
-                timeout=30
-            )
-            sora_task_id = submit_res.json().get("id")
+        for idx, scene in enumerate(scenes):
+            prompt = f"{request.style} animation, {char_desc}, {scene['visual_prompt']}, high quality."
+            print(f"正在提交場景 {idx+1} (超時設定已增加至 300s)...")
+            task_results[internal_task_id] = {
+                "status": "processing", 
+                "progress": f"{idx}/{len(scenes)}",
+                "message": f"正在生成第 {idx+1} 個場景動畫..."
+            }
             
             video_url = None
-            if sora_task_id:
-                video_url = await poll_video_url(sora_task_id, headers_sora)
+            try:
+                # 提交影片請求
+                submit_res = requests.post(
+                    f"{SORA_BASE_URL}/v1/video/sora-video",
+                    headers=headers_sora,
+                    json={"model": "sora-2", "prompt": prompt},
+                    timeout=300 # 設定為 5 分鐘
+                )
+                
+                if submit_res.status_code == 200:
+                    # 檢查回應是否為空
+                    if not submit_res.text.strip():
+                        raise ValueError("伺服器回傳了空內容")
+                        
+                    sora_data = submit_res.json()
+                    sora_job_id = sora_data.get("id") or (sora_data.get("data") and sora_data.get("data").get("id"))
+                    
+                    if sora_job_id:
+                        video_url = await poll_video_url(sora_job_id, headers_sora)
+                    else:
+                        print(f"提交成功但未獲取 ID: {sora_data}")
+                else:
+                    print(f"場景 {idx+1} 伺服器回傳錯誤代碼: {submit_res.status_code}, 內容: {submit_res.text[:100]}")
+                    
+            except requests.exceptions.Timeout:
+                print(f"場景 {idx+1} 提交超時（300秒已到）")
+            except Exception as e:
+                print(f"場景 {idx+1} 發生錯誤: {e}")
             
             final_course.append({
-                "title": scene.get("title", "教學場景"),
-                "narration": scene.get("narration", "正在學習中..."),
+                "title": scene.get("title", f"場景 {idx+1}"),
+                "narration": scene.get("narration", "正在學習..."),
                 "video_url": video_url or "https://media.giphy.com/media/3o7TKMGpxx36E20Nl6/giphy.gif"
             })
-        
+            
+            task_results[internal_task_id]["progress"] = f"{idx+1}/{len(scenes)}"
+
         task_results[internal_task_id] = {"status": "completed", "data": final_course}
+        print(f"--- 任務完成 ---")
         
     except Exception as e:
-        task_results[internal_task_id] = {"status": "error", "message": str(e)}
+        print(f"背景任務失敗: {e}")
+        task_results[internal_task_id] = {"status": "error", "message": f"製作失敗: {str(e)}"}
 
 # --- 路由 ---
 
 @app.get("/health")
 async def health():
-    return {"status": "online", "api_configured": bool(DEEPSEEK_API_KEY and SORA_API_KEY)}
+    return {"status": "online"}
 
 @app.post("/generate-video")
 async def generate_video(request: VideoRequest, background_tasks: BackgroundTasks):
-    if not DEEPSEEK_API_KEY or not SORA_API_KEY:
-        raise HTTPException(status_code=500, detail="API Key 尚未配置")
-
-    # 建立唯一的任務 ID
-    task_id = f"task_{int(time.time())}_{request.topic[:5]}"
-    task_results[task_id] = {"status": "processing"}
+    internal_id = f"task_{int(time.time())}"
+    # 初始化狀態，讓前端能立刻得到 ID
+    task_results[internal_id] = {"status": "processing", "message": "任務已加入佇列"}
     
-    # 將任務丟到背景執行，避免 Request 超時
-    background_tasks.add_task(background_generate_course, request, task_id)
+    # 將所有耗時操作完全移入背景任務
+    background_tasks.add_task(background_generate_course, request, internal_id)
     
-    return {"status": "queued", "task_id": task_id}
+    # 立即回傳 ID，避免瀏覽器端超時或 RESET
+    return {"status": "queued", "task_id": internal_id}
 
 @app.get("/task-status/{task_id}")
 async def get_task_status(task_id: str):
-    status = task_results.get(task_id)
-    if not status:
-        raise HTTPException(status_code=404, detail="找不到該任務")
-    return status
+    return task_results.get(task_id, {"status": "not_found"})
 
 if __name__ == "__main__":
     import uvicorn
-    # 本地測試時使用，Render 部署時會由其啟動指令控管
-    uvicorn.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", 8000)))
+    uvicorn.run(app, host="0.0.0.0", port=8000)

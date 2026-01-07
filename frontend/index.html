@@ -37,6 +37,12 @@
             50% { transform: scale(1.2); opacity: 0.7; }
         }
         .status-online { background-color: #22c55e; animation: pulse-green 2s infinite; }
+        
+        .success-pop { animation: pop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes pop {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
     </style>
 </head>
 <body class="main-bg h-screen flex overflow-hidden">
@@ -59,7 +65,6 @@
             <div id="backend-status" class="w-3 h-3 rounded-full bg-gray-300 transition-all duration-500" title="連線檢測中"></div>
         </div>
         
-        <!-- 動畫分頁面板 -->
         <div id="panel-video" class="panel-content active space-y-4">
             <h3 class="font-bold text-sm text-blue-600">影片製作設定</h3>
             <div class="space-y-2">
@@ -88,22 +93,8 @@
             <p id="local-hint" class="text-[10px] text-red-400 text-center mt-2 hidden">偵測不到後端，請檢查終端機</p>
         </div>
 
-        <!-- 聊天分頁面板 -->
         <div id="panel-chat" class="panel-content space-y-4">
             <h3 class="font-bold text-sm text-blue-600">導師對話設定</h3>
-            <p class="text-xs text-slate-500">當前使用：蘇格拉底啟發模式</p>
-        </div>
-
-        <!-- 筆記分頁面板 -->
-        <div id="panel-notes" class="panel-content space-y-4">
-            <h3 class="font-bold text-sm text-blue-600">筆記匯出管理</h3>
-            <p class="text-xs text-slate-500">您可以將生成的內容轉化為筆記。</p>
-        </div>
-
-        <!-- 記憶卡分頁面板 -->
-        <div id="panel-flashcards" class="panel-content space-y-4">
-            <h3 class="font-bold text-sm text-blue-600">記憶訓練</h3>
-            <p class="text-xs text-slate-500">自動從動畫中提取關鍵知識點。</p>
         </div>
     </aside>
 
@@ -120,10 +111,16 @@
                             <p class="text-xs" id="conn-msg">請確保後端 python main.py 正在運行</p>
                         </div>
                     </div>
-                    <div id="v-loader" class="hidden absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-white z-10 text-center px-4">
-                        <div class="w-12 h-12 border-4 border-blue-500 border-t-transparent animate-spin rounded-full mb-4"></div>
-                        <p id="v-status" class="font-bold">AI 思考中...</p>
-                        <p id="v-timer" class="text-xs mt-2 text-slate-400"></p>
+                    <!-- 加載遮罩 -->
+                    <div id="v-loader" class="hidden absolute inset-0 bg-black/70 flex flex-col items-center justify-center text-white z-10 text-center px-4">
+                        <div id="loader-icon" class="w-16 h-16 border-4 border-blue-500 border-t-transparent animate-spin rounded-full mb-4"></div>
+                        <p id="v-status" class="font-bold text-xl">AI 正在努力製作中...</p>
+                        <div class="flex items-center mt-2 space-x-2">
+                            <span id="v-timer" class="text-sm text-blue-300">已耗時 0 秒</span>
+                            <span class="text-slate-500">|</span>
+                            <span id="v-progress-msg" class="text-xs text-slate-400">正在初始化...</span>
+                        </div>
+                        <p id="v-debug-hint" class="text-[10px] mt-8 text-slate-500 opacity-50">後端背景作業中，請勿關閉視窗</p>
                     </div>
                 </div>
                 
@@ -134,44 +131,15 @@
                     </div>
                     <div class="col-span-2 bg-white p-4 rounded-3xl border shadow-sm">
                         <h3 class="font-bold mb-2 text-sm flex items-center"><i data-lucide="quote" class="w-4 h-4 mr-2"></i>當前旁白</h3>
-                        <div id="v-narration" class="text-sm text-slate-600 h-32 overflow-y-auto leading-relaxed">等待製作完成後顯示內容...</div>
+                        <div id="v-narration" class="text-sm text-slate-600 h-32 overflow-y-auto leading-relaxed italic">等待製作完成後顯示內容...</div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Tab: 智能導師 -->
-        <div id="tab-chat" class="tab-content h-full">
-            <div class="max-w-3xl mx-auto chat-container">
-                <h1 class="text-2xl font-bold mb-4 text-slate-800">智能導師解答室</h1>
-                <div id="chat-messages" class="chat-messages bg-white rounded-3xl border shadow-sm">
-                    <div class="message message-ai">小朋友你好！我是你的數學小助手。有什麼數學問題想聊聊嗎？</div>
-                </div>
-                <div class="mt-4 flex gap-2">
-                    <input id="chat-input" type="text" placeholder="輸入問題..." class="flex-grow p-4 bg-white border rounded-2xl outline-none focus:border-blue-400">
-                    <button id="chat-send" class="bg-blue-500 text-white p-4 rounded-2xl shadow-md"><i data-lucide="send"></i></button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Tab: 學霸筆記 -->
-        <div id="tab-notes" class="tab-content h-full">
-            <div class="max-w-4xl mx-auto">
-                <h1 class="text-2xl font-bold mb-6">我的學霸筆記</h1>
-                <div class="bg-white p-8 rounded-3xl border shadow-sm">
-                    <p class="text-slate-500">這裡會紀錄你學過的關鍵公式與動畫重點...</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Tab: 記憶卡片 -->
-        <div id="tab-flashcards" class="tab-content h-full">
-            <div class="flex flex-col items-center justify-center h-full">
-                <div class="w-80 h-48 bg-white shadow-xl rounded-3xl flex items-center justify-center text-center p-8 border-t-4 border-blue-500 cursor-pointer hover:scale-105 transition-transform">
-                    <h2 class="text-xl font-bold text-slate-800">點擊生成動畫後<br>自動產生複習卡片</h2>
-                </div>
-            </div>
-        </div>
+        <div id="tab-chat" class="tab-content h-full p-4">智能導師開發中...</div>
+        <div id="tab-notes" class="tab-content h-full p-4">學霸筆記開發中...</div>
+        <div id="tab-flashcards" class="tab-content h-full p-4">記憶卡片開發中...</div>
 
     </main>
 
@@ -183,36 +151,27 @@
 
             let currentPlaylist = [];
             let startTime = 0;
+            let pollCount = 0;
 
             const checkConn = async () => {
                 const dot = document.getElementById('backend-status');
                 const btn = document.getElementById('v-gen');
                 const title = document.getElementById('conn-title');
                 const msg = document.getElementById('conn-msg');
-                const hint = document.getElementById('local-hint');
                 
                 try {
-                    const res = await fetch(`${API}/health`, { 
-                        method: 'GET', 
-                        mode: 'cors',
-                        cache: 'no-store' 
-                    });
-                    
+                    const res = await fetch(`${API}/health`, { method: 'GET', mode: 'cors' });
                     if (res.ok) {
                         dot.className = "w-3 h-3 rounded-full status-online";
-                        title.innerText = "✅ 伺服器已連線";
+                        title.innerText = "✅ 伺服器已就緒";
                         title.className = "mb-2 font-bold text-green-500 text-lg";
-                        msg.innerText = "現在可以開始製作教學動畫了！";
+                        msg.innerText = "您可以開始生成 3D 動畫課程了";
                         btn.disabled = false;
-                        if(hint) hint.classList.add('hidden');
                     }
                 } catch (e) {
                     dot.className = "w-3 h-3 rounded-full bg-red-500";
-                    title.innerText = "❌ 未偵測到後端服務";
-                    title.className = "mb-2 font-bold text-red-400 text-lg";
-                    msg.innerHTML = `請確認終端機顯示：Uvicorn running on ${API}`;
+                    title.innerText = "❌ 伺服器未啟動";
                     btn.disabled = true;
-                    if(hint) hint.classList.remove('hidden');
                     setTimeout(checkConn, 3000);
                 }
             };
@@ -220,78 +179,112 @@
             checkConn();
 
             const vGenBtn = document.getElementById('v-gen');
-            if(vGenBtn) {
-                vGenBtn.onclick = async () => {
-                    const topic = document.getElementById('v-topic').value;
-                    const character = document.getElementById('v-character').value;
-                    const style = document.getElementById('v-style').value;
-                    const loader = document.getElementById('v-loader');
-                    const statusTxt = document.getElementById('v-status');
-                    const timerTxt = document.getElementById('v-timer');
+            vGenBtn.onclick = async () => {
+                const topic = document.getElementById('v-topic').value;
+                const character = document.getElementById('v-character').value;
+                const style = document.getElementById('v-style').value;
+                const loader = document.getElementById('v-loader');
+                const statusTxt = document.getElementById('v-status');
+                const timerTxt = document.getElementById('v-timer');
+                const progressMsg = document.getElementById('v-progress-msg');
+                
+                if (!topic) return alert("請輸入教學主題");
+                
+                loader.classList.remove('hidden');
+                statusTxt.innerText = "正在提交製作請求...";
+                progressMsg.innerText = "正在連線第三方 API...";
+                startTime = Date.now();
+                pollCount = 0;
+
+                const timerInt = setInterval(() => {
+                    if (loader.classList.contains('hidden')) return clearInterval(timerInt);
+                    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                    timerTxt.innerText = `已耗時 ${elapsed} 秒`;
+                }, 1000);
+
+                try {
+                    // 發送請求，即使這裡 Connection Reset，我們也要捕獲它
+                    const res = await fetch(`${API}/generate-video`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ topic, character, style })
+                    });
                     
-                    if (!topic) return alert("請輸入主題");
-                    loader.classList.remove('hidden');
-                    statusTxt.innerText = "正在規劃課程內容...";
-                    startTime = Date.now();
-
-                    const updateTimer = () => {
-                        if (loader.classList.contains('hidden')) return;
-                        const elapsed = Math.floor((Date.now() - startTime) / 1000);
-                        timerTxt.innerText = `已耗時 ${elapsed} 秒 (影片生成通常需 60-120 秒)`;
-                        setTimeout(updateTimer, 1000);
-                    };
-                    updateTimer();
-
-                    try {
-                        const res = await fetch(`${API}/generate-video`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ topic, character, style })
-                        });
-                        
-                        if (!res.ok) throw new Error("任務提交失敗");
-                        
-                        const data = await res.json();
-                        const taskId = data.task_id;
-
-                        const poll = async () => {
-                            try {
-                                const sRes = await fetch(`${API}/task-status/${taskId}`);
-                                const sData = await sRes.json();
-                                
-                                if (sData.status === 'completed') {
-                                    currentPlaylist = sData.data;
-                                    renderPlaylist();
-                                    playScene(0);
-                                    loader.classList.add('hidden');
-                                } else if (sData.status === 'error') {
-                                    if (sData.message.includes("Read timed out")) {
-                                        statusTxt.innerText = "⚠️ 偵測到 API 超時，正在自動重新嘗試...";
-                                    } else {
-                                        alert("發生錯誤: " + sData.message);
-                                        loader.classList.add('hidden');
-                                    }
-                                    setTimeout(poll, 5000);
-                                } else {
-                                    statusTxt.innerText = "AI 正在繪製動畫片段...";
-                                    setTimeout(poll, 5000);
-                                }
-                            } catch (err) {
-                                setTimeout(poll, 5000);
-                            }
-                        };
-                        poll();
-                    } catch (e) {
-                        alert("連線中斷或超時。");
-                        loader.classList.add('hidden');
+                    if (!res.ok) {
+                        throw new Error("伺服器繁忙，請稍後再試");
                     }
-                };
-            }
+                    
+                    const data = await res.json();
+                    const taskId = data.task_id;
+
+                    const pollStatus = async () => {
+                        try {
+                            const safeTaskId = encodeURIComponent(taskId);
+                            const sRes = await fetch(`${API}/task-status/${safeTaskId}`);
+                            
+                            if (sRes.status === 404) {
+                                // 有時候任務剛建立還沒寫入資料庫
+                                setTimeout(pollStatus, 3000);
+                                return;
+                            }
+
+                            const sData = await sRes.json();
+                            
+                            if (sData.status === 'completed' && sData.data) {
+                                currentPlaylist = sData.data;
+                                renderPlaylist();
+                                playScene(0);
+                                loader.classList.add('hidden');
+                                clearInterval(timerInt);
+                                return;
+                            } 
+                            
+                            if (sData.status === 'error') {
+                                statusTxt.innerText = "⏳ API 等待過久，但製作可能仍在進行中...";
+                                progressMsg.innerText = "正在嘗試重新接軌狀態...";
+                                setTimeout(pollStatus, 5000); // 不要報錯退出，繼續嘗試
+                                return;
+                            }
+
+                            // 顯示具體的後端進度
+                            if (sData.message) {
+                                statusTxt.innerText = sData.message;
+                            }
+                            if (sData.progress) {
+                                progressMsg.innerText = `完成進度: ${sData.progress}`;
+                            }
+
+                            setTimeout(pollStatus, 4000);
+                        } catch (err) {
+                            // 輪詢出錯通常是網路波動，不中斷
+                            setTimeout(pollStatus, 4000);
+                        }
+                    };
+                    pollStatus();
+
+                } catch (e) {
+                    // 重點：即使發生 ERR_CONNECTION_RESET，由於後端是異步處理，
+                    // 第三方那邊通常已經收到任務了。
+                    // 這裡我們嘗試「靜默等待」幾秒，看能否撈到剛才可能生成的 TaskID（假設後端已記錄）
+                    console.log("連線異常，但任務可能已在後端啟動:", e);
+                    statusTxt.innerText = "連線重置，但 AI 已收到指令...";
+                    progressMsg.innerText = "正在後台同步狀態，請稍候...";
+                    
+                    // 延遲一段時間後嘗試輪詢（這裡需要一個預測 ID 的機制或重新獲取機制，
+                    // 目前簡單化處理：如果報錯直接建議用戶重試，但保留後台日誌）
+                    setTimeout(() => {
+                        if (loader.classList.contains('hidden')) return;
+                        alert("與伺服器連線不穩 (Connection Reset)。\n若您確定第三方後台顯示成功，請重新啟動後端 main.py 並再次嘗試。");
+                        loader.classList.add('hidden');
+                        clearInterval(timerInt);
+                    }, 10000);
+                }
+            };
 
             const renderPlaylist = () => {
                 const el = document.getElementById('v-playlist');
                 el.innerHTML = currentPlaylist.map((item, idx) => `
-                    <div class="playlist-item" id="item-${idx}" onclick="playScene(${idx})">
+                    <div class="playlist-item success-pop" id="item-${idx}" onclick="playScene(${idx})">
                         <b>場景 ${idx+1}: ${item.title}</b>
                     </div>
                 `).join('');
@@ -307,29 +300,13 @@
                 `;
             };
 
-            // --- 導航切換邏輯 (修正版) ---
-            const navItems = document.querySelectorAll('.nav-item');
-            navItems.forEach(nav => {
+            document.querySelectorAll('.nav-item').forEach(nav => {
                 nav.onclick = () => {
                     const target = nav.getAttribute('data-target');
-                    
-                    // 1. 移除導航項活動狀態
                     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
                     nav.classList.add('active');
-
-                    // 2. 切換對應的 tab-content
-                    const tab = document.getElementById(`tab-${target}`);
-                    if (tab) {
-                        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-                        tab.classList.add('active');
-                    }
-
-                    // 3. 切換對應的 panel-content
-                    const panel = document.getElementById(`panel-${target}`);
-                    if (panel) {
-                        document.querySelectorAll('.panel-content').forEach(p => p.classList.remove('active'));
-                        panel.classList.add('active');
-                    }
+                    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+                    document.getElementById(`tab-${target}`)?.classList.add('active');
                 };
             });
         });
