@@ -210,7 +210,7 @@ async def background_generate_course(request: VideoRequest, internal_task_id: st
 
 # --- API 路由 ---
 
-@app.get("/health")
+@app.route("/health", methods=["GET", "HEAD"])
 async def health():
     return {"status": "online", "time": time.time()}
 
