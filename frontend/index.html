@@ -2,64 +2,64 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>KidAni AI - 智能數學動畫製片廠</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         :root { font-family: 'Inter', 'PingFang TC', system-ui, sans-serif; }
         .main-bg { background-color: #f8fafc; }
-        .sidebar { width: 240px; background: white; border-right: 1px solid #e2e8f0; }
-        .config-panel { width: 340px; background: white; border-right: 1px solid #e2e8f0; }
+        
+        /* 佈局響應式 */
+        @media (min-width: 1024px) {
+            .sidebar { width: 240px; background: white; border-right: 1px solid #e2e8f0; }
+            .config-panel { width: 340px; background: white; border-right: 1px solid #e2e8f0; overflow-y: auto; }
+            .main-content { overflow: hidden; height: 100vh; }
+        }
+
+        @media (max-width: 1023px) {
+            .sidebar { display: none; }
+            .config-panel { width: 100%; border-bottom: 1px solid #e2e8f0; height: auto; padding: 1rem; }
+            .mobile-nav { display: flex; position: fixed; bottom: 0; width: 100%; background: white; border-top: 1px solid #e2e8f0; z-index: 50; padding: 0.5rem 0; }
+            .main-content { padding-bottom: 80px; overflow-y: auto; height: 100vh; }
+        }
+
+        /* 導覽樣式 */
         .nav-item { cursor: pointer; display: flex; align-items: center; padding: 0.8rem 1.25rem; margin: 0.2rem 1rem; border-radius: 12px; font-size: 0.95rem; color: #64748b; transition: all 0.2s; }
         .nav-item.active { background: #3b82f6; color: white; font-weight: 600; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2); }
         .nav-item i { margin-right: 12px; width: 1.2rem; height: 1.2rem; }
         
-        .tab-content { display: none; height: 100%; overflow-y: auto; }
+        .m-nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; font-size: 10px; color: #94a3b8; cursor: pointer; }
+        .m-nav-item.active { color: #3b82f6; font-weight: bold; }
+
+        .tab-content { display: none; height: 100%; }
         .tab-content.active { display: block; }
         
         .panel-content { display: none; }
         .panel-content.active { display: block; }
         
-        .video-box { aspect-ratio: 16/9; background: #0f172a; border-radius: 24px; overflow: hidden; position: relative; border: 4px solid white; box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
-        
-        .chat-container { height: calc(100vh - 120px); display: flex; flex-direction: column; }
-        .chat-messages { flex-grow: 1; overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; gap: 1rem; }
-        .message { max-width: 80%; padding: 0.75rem 1rem; border-radius: 1.2rem; font-size: 0.95rem; line-height: 1.5; }
-        .message-ai { background: white; color: #334155; align-self: flex-start; border: 1px solid #e2e8f0; border-bottom-left-radius: 2px; }
-        .message-user { background: #3b82f6; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
+        /* 按鈕切換樣式 */
+        .btn-toggle { transition: all 0.2s; border: 1px solid #e2e8f0; padding: 8px 12px; border-radius: 10px; font-size: 12px; font-weight: 600; background: #f8fafc; color: #64748b; width: 100%; text-align: center; }
+        .btn-toggle.selected { background-color: #3b82f6 !important; color: white !important; border-color: #2563eb; box-shadow: 0 4px 10px rgba(59, 130, 246, 0.2); }
 
-        .upload-zone { border: 2px dashed #e2e8f0; border-radius: 16px; padding: 1.5rem; text-align: center; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden; }
-        .upload-zone:hover { border-color: #3b82f6; background: #f8fafc; }
+        /* 上傳區域 */
+        .upload-zone { border: 2px dashed #e2e8f0; border-radius: 16px; padding: 1rem; text-align: center; cursor: pointer; transition: all 0.2s; }
+        .upload-zone:hover { border-color: #3b82f6; background: #eff6ff; }
 
-        .btn-toggle { transition: all 0.2s; border: 1px solid #e2e8f0; padding: 10px; border-radius: 12px; font-size: 12px; font-weight: bold; background: #f8fafc; }
-        .btn-toggle.selected { background-color: #3b82f6 !important; color: white !important; border-color: #2563eb; }
-
-        .recording-pulse { animation: pulse-red 1.5s infinite; color: #ef4444; }
-        @keyframes pulse-red {
-            0% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.2); opacity: 0.7; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-
-        .img-preview { max-width: 100px; border-radius: 8px; border: 1px solid #ddd; margin-top: 10px; display: none; }
-        
-        /* 亮點裝飾 */
-        .glow-text { text-shadow: 0 0 15px rgba(59, 130, 246, 0.4); }
-
-        /* 卡片翻轉效果 */
-        .card-flip { perspective: 1000px; width: 320px; height: 200px; cursor: pointer; }
-        .card-inner { position: relative; width: 100%; height: 100%; text-align: center; transition: transform 0.6s; transform-style: preserve-3d; }
+        /* 影片與卡片 */
+        .video-box { aspect-ratio: 16/9; background: #0f172a; position: relative; border: 4px solid white; box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
+        .card-flip { perspective: 1000px; height: 220px; cursor: pointer; margin: 0 auto; width: 100%; max-width: 340px; }
+        .card-inner { position: relative; width: 100%; height: 100%; transition: transform 0.6s; transform-style: preserve-3d; }
         .card-flip.is-flipped .card-inner { transform: rotateY(180deg); }
-        .card-front, .card-back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 24px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+        .card-front, .card-back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 24px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
         .card-front { background: white; color: #1e293b; }
         .card-back { background: #3b82f6; color: white; transform: rotateY(180deg); }
     </style>
 </head>
-<body class="main-bg h-screen flex overflow-hidden">
+<body class="main-bg h-screen flex flex-col lg:flex-row overflow-hidden">
 
-    <!-- 左側主導覽 -->
-    <nav class="sidebar flex flex-col py-6 shrink-0">
+    <!-- [電腦端] 左導航 -->
+    <nav class="sidebar hidden lg:flex flex-col py-6 shrink-0">
         <div class="px-8 mb-8 flex items-center text-blue-600 font-bold text-xl italic">
             <i data-lucide="zap" class="mr-2 fill-blue-600"></i> KidAni AI
         </div>
@@ -69,155 +69,201 @@
         <div data-target="flashcards" class="nav-item"><i data-lucide="layers"></i> 記憶卡片</div>
     </nav>
 
-    <!-- 中間配置面板 -->
+    <!-- [手機端] 底導航 -->
+    <div class="mobile-nav lg:hidden">
+        <div data-target="video" class="m-nav-item active"><i data-lucide="clapperboard"></i><span>影片</span></div>
+        <div data-target="chat" class="m-nav-item"><i data-lucide="message-square"></i><span>導師</span></div>
+        <div data-target="notes" class="m-nav-item"><i data-lucide="book-open"></i><span>筆記</span></div>
+        <div data-target="flashcards" class="m-nav-item"><i data-lucide="layers"></i><span>卡片</span></div>
+    </div>
+
+    <!-- 配置面板 (電腦端第二欄) -->
     <aside class="config-panel shrink-0 p-6 flex flex-col space-y-6">
         <div class="flex items-center justify-between">
-            <h2 class="text-xl font-bold text-slate-800">配置面板</h2>
-            <div id="backend-status" class="w-3 h-3 rounded-full bg-gray-300 transition-all duration-500"></div>
+            <h2 class="text-xl font-bold text-slate-800">配置中心</h2>
+            <div id="backend-status" class="w-3 h-3 rounded-full bg-gray-300"></div>
         </div>
         
-        <!-- 面板：影片製作 -->
-        <div id="panel-video" class="panel-content active space-y-4">
-            <h3 class="font-bold text-sm text-blue-600 flex items-center">
-                <i data-lucide="eye" class="w-4 h-4 mr-1"></i> 步驟 1：內容識別 (Qwen-VL)
-            </h3>
-            <div class="grid grid-cols-2 gap-2">
-                <div class="upload-zone flex flex-col items-center justify-center p-4" onclick="document.getElementById('file-input').click()">
-                    <i data-lucide="file-up" class="mb-1 text-slate-400 w-5 h-5"></i>
-                    <span class="text-[10px] font-bold">PDF/PPT</span>
+        <!-- 動畫分頁配置 -->
+        <div id="panel-video" class="panel-content active space-y-5">
+            <div class="space-y-3">
+                <h3 class="text-xs font-bold text-blue-600 flex items-center tracking-widest uppercase">
+                    <i data-lucide="scan" class="w-3 h-3 mr-2"></i> 1. 視覺識別 (Qwen-VL)
+                </h3>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="upload-zone flex flex-col items-center justify-center p-4 bg-blue-50 border-blue-200" onclick="document.getElementById('file-input').click()">
+                        <i data-lucide="camera" class="mb-1 text-blue-500 w-5 h-5"></i>
+                        <span class="text-[10px] font-bold text-blue-600">拍照識別</span>
+                    </div>
+                    <div class="upload-zone flex flex-col items-center justify-center p-4" onclick="document.getElementById('file-input').click()">
+                        <i data-lucide="file-up" class="mb-1 text-slate-400 w-5 h-5"></i>
+                        <span class="text-[10px] font-bold text-slate-500">上傳課件</span>
+                    </div>
+                    <input type="file" id="file-input" class="hidden" accept="image/*" capture="environment">
                 </div>
-                <div class="upload-zone flex flex-col items-center justify-center p-4 border-blue-200 bg-blue-50" onclick="document.getElementById('file-input').click()">
-                    <i data-lucide="camera" class="mb-1 text-blue-500 w-5 h-5"></i>
-                    <span class="text-[10px] font-bold text-blue-600">拍照識別</span>
+            </div>
+
+            <div class="space-y-3 pt-2">
+                <h3 class="text-xs font-bold text-blue-600 flex items-center tracking-widest uppercase">
+                    <i data-lucide="sparkles" class="w-3 h-3 mr-2"></i> 2. 生成設定 (Sora-2)
+                </h3>
+                <div class="space-y-4">
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-bold text-slate-400">教學主題</label>
+                        <input id="v-topic" type="text" class="w-full p-3 bg-slate-50 border rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="識別後自動填入...">
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-bold text-slate-400">主要角色</label>
+                        <select id="v-character" class="w-full p-3 bg-slate-50 border rounded-xl text-sm outline-none">
+                            <option value="熊大熊二" selected>熊出沒 (熊大熊二)</option>
+                            <option value="喜羊羊">喜羊羊與灰太狼</option>
+                            <option value="艾莎">冰雪奇緣 (Elsa)</option>
+                            <option value="小博士">卡通 AI 博士</option>
+                        </select>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-bold text-slate-400">渲染風格</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button class="btn-toggle selected">3D 動畫</button>
+                            <button class="btn-toggle">2D 繪本</button>
+                        </div>
+                    </div>
                 </div>
-                <input type="file" id="file-input" class="hidden" accept="image/*, .pdf">
             </div>
-            
-            <h3 class="font-bold text-sm text-blue-600 pt-2 flex items-center">
-                <i data-lucide="settings" class="w-4 h-4 mr-1"></i> 步驟 2：生成設定
-            </h3>
-            <div class="space-y-2">
-                <label class="text-xs font-bold text-slate-400">教學主題</label>
-                <input id="v-topic" type="text" class="w-full p-3 bg-slate-50 border rounded-xl text-sm" placeholder="上傳課本照片或輸入主題...">
-            </div>
-            <div class="space-y-2">
-                <label class="text-xs font-bold text-slate-400">教學角色</label>
-                <select id="v-character" class="w-full p-3 bg-slate-50 border rounded-xl text-sm">
-                    <option value="熊大熊二" selected>熊出沒 (熊大熊二)</option>
-                    <option value="喜羊羊">喜羊羊與灰太狼</option>
-                    <option value="小博士">卡通博士</option>
-                </select>
-            </div>
-            <button id="v-gen" disabled class="w-full bg-blue-600 text-white font-bold py-4 rounded-2xl shadow-lg hover:bg-blue-700 disabled:bg-slate-300 transition-all flex items-center justify-center">
-                <i data-lucide="play" class="w-5 h-5 mr-2 fill-white"></i> 立即生成 3D 動畫課堂
+
+            <button id="v-gen" class="w-full bg-blue-600 text-white font-bold py-4 rounded-2xl shadow-lg hover:bg-blue-700 transition-all flex items-center justify-center">
+                <i data-lucide="wand-2" class="w-5 h-5 mr-2"></i> 立即製作動畫課程
             </button>
         </div>
 
-        <!-- 面板：導師對話 -->
-        <div id="panel-chat" class="panel-content space-y-4">
-            <h3 class="font-bold text-sm text-blue-600">多模態深度學習</h3>
-            <div class="upload-zone" onclick="document.getElementById('chat-file-input').click()">
-                <i data-lucide="book-copy" class="mx-auto mb-2 text-slate-400"></i>
-                <p class="text-xs text-slate-500 font-medium">上傳課件/題目圖片</p>
-                <p class="text-[10px] text-slate-400 mt-1">Qwen-VL 將精確解析內容</p>
-                <img id="chat-img-preview" class="img-preview mx-auto">
+        <!-- 導師分頁配置 -->
+        <div id="panel-chat" class="panel-content space-y-5">
+            <h3 class="text-xs font-bold text-blue-600 tracking-widest uppercase">多模態深度解析</h3>
+            <div class="upload-zone py-8" onclick="document.getElementById('chat-file-input').click()">
+                <i data-lucide="image-plus" class="mx-auto mb-2 text-slate-300 w-8 h-8"></i>
+                <p class="text-xs text-slate-400">拍下你不會做的題目</p>
             </div>
             <input type="file" id="chat-file-input" class="hidden" accept="image/*">
+            <div class="space-y-3">
+                <label class="text-[10px] font-bold text-slate-400 italic">對話偏好</label>
+                <div class="grid grid-cols-1 gap-2">
+                    <button class="btn-toggle selected">引導式提問 (不直接給答案)</button>
+                    <button class="btn-toggle">快速解答模式</button>
+                </div>
+            </div>
         </div>
 
-        <!-- 面板：學霸筆記 -->
-        <div id="panel-notes" class="panel-content space-y-4">
-            <h3 class="font-bold text-sm text-blue-600">筆記樣式設定</h3>
-            <div class="grid grid-cols-2 gap-2">
-                <button class="btn-toggle selected">精簡摘要</button>
-                <button class="btn-toggle">詳細推導</button>
+        <!-- 筆記分頁配置 -->
+        <div id="panel-notes" class="panel-content space-y-5">
+            <h3 class="text-xs font-bold text-blue-600 tracking-widest uppercase">筆記樣式自定義</h3>
+            <div class="space-y-4">
+                <div class="space-y-2">
+                    <label class="text-[10px] font-bold text-slate-400">筆記長度</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button class="btn-toggle selected">精簡核心</button>
+                        <button class="btn-toggle">詳盡分析</button>
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <label class="text-[10px] font-bold text-slate-400">重點標註</label>
+                    <div class="grid grid-cols-1 gap-2">
+                        <button class="btn-toggle selected">螢光筆模式</button>
+                        <button class="btn-toggle">條列清單模式</button>
+                    </div>
+                </div>
             </div>
-            <button class="w-full py-3 bg-slate-800 text-white rounded-xl font-bold text-sm flex items-center justify-center">
-                <i data-lucide="download" class="w-4 h-4 mr-2"></i> 導出為 PDF
-            </button>
         </div>
 
-        <!-- 面板：記憶卡片 -->
-        <div id="panel-flashcards" class="panel-content space-y-4">
-            <h3 class="font-bold text-sm text-blue-600">複習模式選擇</h3>
-            <div class="grid grid-cols-2 gap-2">
-                <button class="btn-toggle selected">普通練習</button>
-                <button class="btn-toggle">艾賓浩斯</button>
-            </div>
-            <div class="p-3 bg-blue-50 border border-blue-100 rounded-xl">
-                <p class="text-[10px] text-blue-600 italic leading-tight">
-                    艾賓浩斯模式：AI 會在您即將遺忘的黃金時間點自動推送這張卡片。
-                </p>
+        <!-- 卡片分頁配置 -->
+        <div id="panel-flashcards" class="panel-content space-y-5">
+            <h3 class="text-xs font-bold text-blue-600 tracking-widest uppercase">記憶強化模式</h3>
+            <div class="space-y-4">
+                <div class="space-y-2">
+                    <label class="text-[10px] font-bold text-slate-400">複習演算法</label>
+                    <div class="grid grid-cols-1 gap-2">
+                        <button class="btn-toggle selected">艾賓浩斯遺忘曲線</button>
+                        <button class="btn-toggle">隨機抽卡模式</button>
+                    </div>
+                </div>
+                <div class="p-4 bg-orange-50 rounded-xl border border-orange-100">
+                    <p class="text-[10px] text-orange-600 font-bold leading-relaxed">
+                        💡 系統會根據 Qwen-VL 識別出的難點，自動為你生成 3-5 張關鍵記憶卡片。
+                    </p>
+                </div>
             </div>
         </div>
     </aside>
 
-    <!-- 右側主要內容區 -->
-    <main class="flex-grow p-8 overflow-hidden">
+    <!-- 右側主要內容 -->
+    <main class="main-content flex-grow p-4 lg:p-8">
         
         <!-- Tab: 影片製作 -->
-        <div id="tab-video" class="tab-content active h-full">
-            <div class="space-y-6">
-                <div class="video-box flex items-center justify-center">
-                    <div id="v-main-display" class="w-full h-full flex items-center justify-center text-center">
-                        <div class="px-6">
-                            <h1 class="text-white text-3xl font-black mb-2 tracking-wider glow-text">KidAni AI 智能動畫系統</h1>
-                            <p class="text-blue-400 font-bold text-lg">拍照即刻生成 3D 數學動畫</p>
+        <div id="tab-video" class="tab-content active">
+            <div class="flex flex-col space-y-4 lg:space-y-6">
+                <div class="video-box rounded-2xl lg:rounded-[32px]">
+                    <div id="v-main-display" class="w-full h-full flex items-center justify-center text-center p-4">
+                        <div>
+                            <h1 class="text-xl lg:text-3xl font-black text-white mb-2 tracking-widest">KIDANI AI STUDIO</h1>
+                            <p class="text-blue-400 text-sm lg:text-lg font-bold">讓 AI 成為你的專屬內容創作者</p>
                         </div>
                     </div>
-                    <div id="v-loader" class="hidden absolute inset-0 bg-black/90 flex flex-col items-center justify-center text-white z-10 text-center px-4">
-                        <div class="w-16 h-16 border-4 border-blue-500 border-t-transparent animate-spin rounded-full mb-4"></div>
-                        <p id="v-status" class="font-bold text-xl">Qwen-VL 正在讀取課本內容...</p>
+                    <div id="v-loader" class="hidden absolute inset-0 bg-black/90 flex flex-col items-center justify-center text-white z-10 px-6 text-center">
+                        <div class="w-12 h-12 border-4 border-blue-500 border-t-transparent animate-spin rounded-full mb-4"></div>
+                        <p id="v-status" class="font-bold text-sm lg:text-lg text-blue-400 italic">DeepSeek 正在解析內容...</p>
                     </div>
                 </div>
                 
-                <div class="grid grid-cols-3 gap-4">
-                    <div class="col-span-1 bg-white p-4 rounded-3xl border shadow-sm h-56 overflow-y-auto">
-                        <h3 class="font-bold mb-3 text-sm flex items-center"><i data-lucide="list" class="w-4 h-4 mr-2 text-blue-500"></i>教學目錄</h3>
-                        <div id="v-playlist" class="space-y-2 text-xs text-slate-400 italic">尚未生成章節...</div>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                    <div class="lg:col-span-1 bg-white p-5 rounded-3xl border h-48 lg:h-64 overflow-y-auto shadow-sm">
+                        <h3 class="font-bold mb-3 text-xs lg:text-sm flex items-center text-blue-600">
+                            <i data-lucide="list-video" class="w-4 h-4 mr-2"></i> 教學大綱
+                        </h3>
+                        <div id="v-playlist" class="space-y-2 text-xs text-slate-400 italic">暫無播放內容</div>
                     </div>
-                    <div class="col-span-2 bg-white p-4 rounded-3xl border shadow-sm">
-                        <h3 class="font-bold mb-2 text-sm flex items-center"><i data-lucide="quote" class="w-4 h-4 mr-2 text-blue-500"></i>當前旁白</h3>
-                        <div id="v-narration" class="text-sm text-slate-600 h-32 overflow-y-auto leading-relaxed italic">等待製作完成後顯示內容...</div>
+                    <div class="lg:col-span-2 bg-white p-5 rounded-3xl border shadow-sm">
+                        <h3 class="font-bold mb-3 text-xs lg:text-sm flex items-center text-blue-600">
+                            <i data-lucide="languages" class="w-4 h-4 mr-2"></i> 腳本對白 (Narration)
+                        </h3>
+                        <div id="v-narration" class="text-xs lg:text-sm text-slate-600 h-28 lg:h-40 overflow-y-auto leading-relaxed italic">等待生成...</div>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- Tab: 智能導師 -->
-        <div id="tab-chat" class="tab-content h-full">
-            <div class="chat-container">
-                <div class="chat-messages" id="chat-box">
-                    <div class="message message-ai">👋 你好！我是配備 <b>Qwen-VL</b> 的 AI 導師。拍下題目，我能為你解析並生成動畫！</div>
+        <div id="tab-chat" class="tab-content">
+            <div class="flex flex-col h-full bg-white rounded-3xl border shadow-sm overflow-hidden">
+                <div id="chat-box" class="flex-grow p-6 overflow-y-auto space-y-4">
+                    <div class="flex items-start gap-3">
+                        <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs">AI</div>
+                        <div class="bg-slate-50 p-4 rounded-2xl rounded-tl-none text-sm text-slate-600 max-w-[85%] border">
+                            你好！我是你的 AI 智能導師。你可以點擊左側拍照按鈕，讓我幫你分析課本內容！
+                        </div>
+                    </div>
                 </div>
-                <div class="p-4 bg-white border-t flex gap-2 items-center">
-                    <input id="chat-input" type="text" placeholder="輸入問題..." class="flex-grow p-3 bg-slate-50 border rounded-xl outline-none">
-                    <button class="bg-blue-500 text-white p-3 px-6 rounded-xl font-bold">發送</button>
+                <div class="p-4 bg-slate-50 border-t flex gap-2">
+                    <input id="chat-input" class="flex-grow p-3 bg-white rounded-xl text-sm border outline-none focus:ring-2 focus:ring-blue-500" placeholder="詢問關於題目的任何問題...">
+                    <button class="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold text-sm shadow-md">傳送</button>
                 </div>
             </div>
         </div>
 
         <!-- Tab: 學霸筆記 -->
-        <div id="tab-notes" class="tab-content h-full">
-            <div class="max-w-3xl mx-auto space-y-6">
-                <div class="bg-white p-8 rounded-[32px] border shadow-sm min-h-[500px]">
-                    <div class="flex justify-between items-start mb-6 border-b pb-4">
-                        <div>
-                            <h2 class="text-2xl font-black text-slate-800">📖 AI 學霸隨堂筆記</h2>
-                            <p class="text-xs text-slate-400 mt-1">根據 Qwen-VL 解析與 Sora-2 影片自動生成</p>
+        <div id="tab-notes" class="tab-content">
+            <div class="max-w-3xl mx-auto space-y-6 h-full overflow-y-auto pb-10">
+                <div class="bg-white p-8 lg:p-12 rounded-[32px] border shadow-sm min-h-full">
+                    <div class="flex justify-between items-center mb-8 border-b pb-6">
+                        <h2 class="text-2xl font-black text-slate-800">📖 AI 結構化筆記</h2>
+                        <div class="flex gap-2">
+                            <div class="w-3 h-3 rounded-full bg-red-400"></div>
+                            <div class="w-3 h-3 rounded-full bg-yellow-400"></div>
+                            <div class="w-3 h-3 rounded-full bg-green-400"></div>
                         </div>
-                        <span class="bg-blue-100 text-blue-600 text-[10px] px-3 py-1 rounded-full font-bold">自動更新中</span>
                     </div>
-                    <div class="space-y-6 text-slate-600">
-                        <div class="p-4 bg-slate-50 rounded-2xl">
-                            <h4 class="font-bold text-blue-600 mb-2 flex items-center"><i data-lucide="key" class="w-4 h-4 mr-2"></i> 核心定義</h4>
-                            <p class="text-sm">尚未開始學習，完成影片生成後，AI 將自動提取關鍵概念。</p>
-                        </div>
-                        <div class="p-4 bg-slate-50 rounded-2xl">
-                            <h4 class="font-bold text-blue-600 mb-2 flex items-center"><i data-lucide="function-square" class="w-4 h-4 mr-2"></i> 公式總結</h4>
-                            <div class="h-20 border-2 border-dashed border-slate-200 rounded-xl flex items-center justify-center italic text-xs text-slate-400">
-                                等待提取 LaTeX 公式...
-                            </div>
+                    <div id="notes-content" class="text-slate-600 space-y-6">
+                        <div class="flex flex-col items-center justify-center py-20 text-slate-300">
+                            <i data-lucide="book-open-check" class="w-16 h-16 mb-4 opacity-20"></i>
+                            <p class="text-sm font-medium italic">尚未識別內容，請先在「配置中心」拍照識別</p>
                         </div>
                     </div>
                 </div>
@@ -225,104 +271,188 @@
         </div>
 
         <!-- Tab: 記憶卡片 -->
-        <div id="tab-flashcards" class="tab-content h-full">
-            <div class="flex flex-col items-center justify-center h-full space-y-8">
+        <div id="tab-flashcards" class="tab-content">
+            <div class="flex flex-col items-center justify-center h-full space-y-10">
                 <div id="flashcard" class="card-flip">
                     <div class="card-inner">
                         <div class="card-front">
-                            <span class="text-[10px] text-blue-500 font-bold mb-4">題目 (正面)</span>
-                            <p class="text-lg font-bold text-slate-700">尚未生成卡片</p>
-                            <p class="text-xs text-slate-400 mt-4">點擊翻轉查看答案</p>
+                            <span class="text-[10px] font-bold text-blue-500 mb-4 tracking-widest uppercase">Question</span>
+                            <p id="card-q" class="text-lg lg:text-xl font-black text-slate-700 text-center px-4 leading-relaxed">
+                                準備好挑戰了嗎？
+                            </p>
+                            <div class="absolute bottom-6 flex items-center text-slate-400 text-[10px]">
+                                <i data-lucide="mouse-pointer-2" class="w-3 h-3 mr-1"></i> 點擊翻轉查看答案
+                            </div>
                         </div>
                         <div class="card-back">
-                            <span class="text-[10px] text-white/70 font-bold mb-4">解析 (背面)</span>
-                            <p class="text-base font-medium">請先生成教學影片</p>
+                            <span class="text-[10px] font-bold text-white/70 mb-4 tracking-widest uppercase">Answer</span>
+                            <p id="card-a" class="text-base lg:text-lg font-bold text-white text-center px-6 leading-relaxed">
+                                等待視覺識別內容...
+                            </p>
                         </div>
                     </div>
                 </div>
-                
                 <div class="flex gap-4">
-                    <button class="w-12 h-12 rounded-full border flex items-center justify-center hover:bg-red-50 text-red-400 transition-all"><i data-lucide="x"></i></button>
-                    <button class="w-12 h-12 rounded-full border flex items-center justify-center hover:bg-orange-50 text-orange-400 transition-all"><i data-lucide="rotate-ccw"></i></button>
-                    <button class="w-12 h-12 rounded-full border flex items-center justify-center hover:bg-green-50 text-green-400 transition-all"><i data-lucide="check"></i></button>
-                </div>
-
-                <div class="flex space-x-2">
-                    <div class="w-2 h-2 rounded-full bg-blue-500"></div>
-                    <div class="w-2 h-2 rounded-full bg-slate-200"></div>
-                    <div class="w-2 h-2 rounded-full bg-slate-200"></div>
+                    <button class="p-3 rounded-full bg-white border shadow-sm text-red-500 hover:bg-red-50 transition-colors"><i data-lucide="x"></i></button>
+                    <button class="p-3 rounded-full bg-white border shadow-sm text-green-500 hover:bg-green-50 transition-colors"><i data-lucide="check"></i></button>
                 </div>
             </div>
         </div>
-
     </main>
 
     <script>
+        const API_BASE = "http://localhost:8000";
+
         window.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
 
-            // 導航與分頁
-            document.querySelectorAll('.nav-item').forEach(nav => {
-                nav.onclick = () => {
-                    const target = nav.getAttribute('data-target');
-                    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-                    nav.classList.add('active');
-                    document.querySelectorAll('.panel-content').forEach(p => p.classList.remove('active'));
-                    document.getElementById(`panel-${target}`)?.classList.add('active');
-                    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-                    document.getElementById(`tab-${target}`)?.classList.add('active');
-                };
-            });
-
-            // 按鈕切換
-            document.querySelectorAll('.btn-toggle').forEach(btn => {
-                btn.onclick = () => {
-                    btn.parentElement.querySelectorAll('.btn-toggle').forEach(b => b.classList.remove('selected'));
-                    btn.classList.add('selected');
-                };
-            });
-
-            // 卡片翻轉
-            document.getElementById('flashcard').onclick = function() {
-                this.classList.toggle('is-flipped');
+            // 1. 全局分頁與配置切換
+            const switchTab = (target) => {
+                document.querySelectorAll('.nav-item, .m-nav-item').forEach(el => {
+                    el.classList.toggle('active', el.getAttribute('data-target') === target);
+                });
+                document.querySelectorAll('.panel-content, .tab-content').forEach(el => {
+                    el.classList.toggle('active', el.id === `panel-${target}` || el.id === `tab-${target}`);
+                });
             };
 
-            // Qwen-VL 圖片識別模擬 (導師介面)
-            const chatFileInput = document.getElementById('chat-file-input');
-            const preview = document.getElementById('chat-img-preview');
-            const chatBox = document.getElementById('chat-box');
+            document.querySelectorAll('.nav-item, .m-nav-item').forEach(nav => {
+                nav.onclick = () => switchTab(nav.getAttribute('data-target'));
+            });
 
-            chatFileInput.onchange = (e) => {
+            // 2. 切換按鈕 UI 邏輯
+            document.querySelectorAll('.btn-toggle').forEach(btn => {
+                btn.onclick = function() {
+                    const parent = this.parentElement;
+                    parent.querySelectorAll('.btn-toggle').forEach(b => b.classList.remove('selected'));
+                    this.classList.add('selected');
+                };
+            });
+
+            // 3. Qwen-VL 視覺識別串接
+            const fileInput = document.getElementById('file-input');
+            fileInput.onchange = async (e) => {
                 const file = e.target.files[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onload = (re) => {
-                        preview.src = re.target.result;
-                        preview.style.display = 'block';
-                        
-                        const msg = document.createElement('div');
-                        msg.className = "message message-ai";
-                        msg.innerHTML = "✨ <b>Qwen-VL 視覺引擎正在掃描...</b>";
-                        chatBox.appendChild(msg);
-                        chatBox.scrollTop = chatBox.scrollHeight;
+                if (!file) return;
 
-                        setTimeout(() => {
-                            msg.innerHTML = "✅ 識別成功！圖中是一道關於「分數乘法」的應用題。我已經將關鍵步驟整理進<b>「學霸筆記」</b>並生成了對應的<b>「記憶卡片」</b>。您可以點擊「動畫製片」來查看 3D 解說影片！";
-                            // 更新筆記佔位
-                            document.querySelector('#tab-notes .text-sm').innerText = "這張圖片涉及分數與整數的相乘運算，核心在於理解分子相乘、分母不變的邏輯。";
-                            // 更新卡片佔位
-                            document.querySelector('.card-front p').innerText = "分數相乘時，分母代表什麼？";
-                            document.querySelector('.card-back p').innerText = "代表整體的等份總量，運算時分母不變，分子與整數相乘。";
-                        }, 2000);
-                    };
-                    reader.readAsDataURL(file);
+                const reader = new FileReader();
+                reader.onload = async (re) => {
+                    const base64Image = re.target.result;
+                    showLoader("Qwen-VL 正在透視課本內容...");
+                    
+                    try {
+                        const res = await fetch(`${API_BASE}/analyze-image`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ image_base64: base64Image })
+                        });
+                        const data = await res.json();
+                        
+                        // 更新 UI 數據
+                        document.getElementById('v-topic').value = data.topic;
+                        document.getElementById('notes-content').innerHTML = `
+                            <div class="animate-in fade-in slide-in-from-bottom-4 duration-700">
+                                <h4 class="text-blue-600 font-black text-lg mb-4 flex items-center">
+                                    <i data-lucide="star" class="w-5 h-5 mr-2 fill-blue-600"></i> ${data.topic}
+                                </h4>
+                                <div class="space-y-4">
+                                    ${data.notes.split('\n').map(note => `
+                                        <div class="bg-blue-50/50 p-5 rounded-2xl border border-blue-100/50">
+                                            <p class="text-sm lg:text-base font-medium">${note}</p>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        `;
+                        lucide.createIcons();
+                        document.getElementById('card-q').innerText = data.flashcard_q;
+                        document.getElementById('card-a').innerText = data.flashcard_a;
+                        
+                        // 自動導航至筆記頁
+                        if(window.innerWidth < 1024) switchTab('notes');
+                        
+                        hideLoader();
+                    } catch (err) {
+                        alert("後端接口未回應，請檢查 API 是否正確部署");
+                        hideLoader();
+                    }
+                };
+                reader.readAsDataURL(file);
+            };
+
+            // 4. 動畫生成流程
+            document.getElementById('v-gen').onclick = async () => {
+                const topic = document.getElementById('v-topic').value;
+                if(!topic) return alert("請先識別題目或輸入主題");
+
+                showLoader("正在編排 3D 動畫劇本...");
+                try {
+                    const res = await fetch(`${API_BASE}/generate-video`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                            topic: topic, 
+                            character: document.getElementById('v-character').value 
+                        })
+                    });
+                    const { task_id } = await res.json();
+                    pollTask(task_id);
+                } catch (e) {
+                    alert("生成失敗");
+                    hideLoader();
                 }
             };
 
-            // 狀態連線模擬
-            const dot = document.getElementById('backend-status');
-            dot.className = "w-3 h-3 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]";
-            document.getElementById('v-gen').disabled = false;
+            const pollTask = (taskId) => {
+                const timer = setInterval(async () => {
+                    try {
+                        const res = await fetch(`${API_BASE}/task-status/${taskId}`);
+                        const data = await res.json();
+                        if(data.status === "processing") {
+                            document.getElementById('v-status').innerText = data.message || "Sora 正在生成影片...";
+                        } else if(data.status === "completed") {
+                            clearInterval(timer);
+                            renderVideo(data.data);
+                            hideLoader();
+                        }
+                    } catch (e) { clearInterval(timer); }
+                }, 3000);
+            };
+
+            function showLoader(msg) {
+                document.getElementById('v-loader').classList.remove('hidden');
+                document.getElementById('v-status').innerText = msg;
+            }
+            function hideLoader() { document.getElementById('v-loader').classList.add('hidden'); }
+
+            function renderVideo(courseData) {
+                const list = document.getElementById('v-playlist');
+                list.innerHTML = courseData.map((c, i) => `
+                    <div class="p-3 bg-blue-50 rounded-xl border border-blue-100 cursor-pointer text-[11px] font-bold text-blue-600 hover:bg-blue-100" onclick="playScene(${i}, ${JSON.stringify(courseData).replace(/"/g, '&quot;')})">
+                        🎬 第 ${i+1} 幕: ${c.title}
+                    </div>
+                `).join('');
+                playScene(0, courseData);
+            }
+
+            window.playScene = (idx, data) => {
+                document.getElementById('v-narration').innerText = data[idx].narration;
+                document.getElementById('v-main-display').innerHTML = `
+                    <video class="w-full h-full object-cover rounded-2xl" controls autoplay>
+                        <source src="${data[idx].video_url}" type="video/mp4">
+                    </video>`;
+            };
+
+            document.getElementById('flashcard').onclick = function() { this.classList.toggle('is-flipped'); };
+
+            // 定時健康檢查
+            setInterval(async () => {
+                const dot = document.getElementById('backend-status');
+                try {
+                    const res = await fetch(`${API_BASE}/health`);
+                    dot.style.backgroundColor = res.ok ? "#22c55e" : "#ef4444";
+                } catch { dot.style.backgroundColor = "#ef4444"; }
+            }, 5000);
         });
     </script>
 </body>
