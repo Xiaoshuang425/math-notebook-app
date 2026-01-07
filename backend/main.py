@@ -15,7 +15,7 @@ load_dotenv()
 
 app = FastAPI(
     title="KidAni Math AI Studio",
-    version="4.5.0",
+    version="4.5.1",
     description="具備穩定 SSE 解析與自動修復機名的 AI 數學動畫工作室"
 )
 
@@ -51,6 +51,7 @@ def clean_prompt_for_safety(prompt: str) -> str:
     return prompt
 
 def get_character_desc(name: str):
+    """角色映射邏輯 (保留您原有的角色描述)"""
     mapping = {
         "熊大熊二": "two friendly brown bears, 3D Disney Pixar style, high quality textures",
         "喜羊羊": "a cute white sheep with a golden bell, 3D animated style, fluffy wool",
@@ -71,7 +72,7 @@ def extract_id_from_sse(raw_text: str) -> Optional[str]:
         
         try:
             data = json.loads(content)
-            # 支援多種可能的 ID 欄位路徑
+            # 支援多種可能的 ID 欄位路徑 (這是您之前的修復重點)
             job_id = data.get("id") or (data.get("data") and data.get("data").get("id"))
             if job_id: return str(job_id)
         except:
@@ -79,7 +80,7 @@ def extract_id_from_sse(raw_text: str) -> Optional[str]:
     return None
 
 async def poll_video_url(task_id: str, headers: dict):
-    """靈敏輪詢：具備容錯解析與狀態追蹤"""
+    """靈敏輪詢：具備容錯解析與狀態追蹤 (確保影片地址不遺失)"""
     print(f">>> 進入輪詢階段 [ID: {task_id}]")
     async with httpx.AsyncClient(timeout=30.0) as client:
         for i in range(120): # 最多等 20 分鐘
@@ -93,7 +94,6 @@ async def poll_video_url(task_id: str, headers: dict):
                 
                 if res.status_code == 200:
                     raw_text = res.text.strip()
-                    # 輪詢結果也可能帶有 data: 前綴
                     lines = raw_text.split('\n')
                     for line in lines:
                         content = line.strip()
@@ -104,14 +104,14 @@ async def poll_video_url(task_id: str, headers: dict):
                             res_obj = data.get("data") if isinstance(data.get("data"), dict) else data
                             results = res_obj.get("results")
                             
-                            # 成功拿到影片
+                            # 成功拿到影片 (這裡就是您最在意的「獲得地址」邏輯)
                             if results and len(results) > 0:
                                 url = results[0].get('url')
                                 if url: 
                                     print(f"✅ 動畫生成完畢: {url}")
                                     return url
                             
-                            # 檢查狀態
+                            # 檢查中間狀態
                             status = str(res_obj.get("status", "")).lower()
                             if status in ["waiting", "processing", "pending", "running", "none"]:
                                 if i % 3 == 0: print(f"⏳ 任務 {task_id} 狀態: {status}...")
@@ -127,13 +127,13 @@ async def poll_video_url(task_id: str, headers: dict):
     return None
 
 async def background_generate_course(request: VideoRequest, internal_task_id: str):
-    """背景執行緒：全功能教學影片生成流水線"""
+    """背景執行緒：全功能教學影片生成流水線 (整合 DeepSeek + Sora)"""
     async with httpx.AsyncClient(timeout=120.0) as client:
         try:
             print(f"🚀 開始製作課程: {request.topic}")
             task_results[internal_task_id] = {"status": "processing", "message": "正在規劃教學劇本..."}
             
-            # 1. 使用 DeepSeek 生成劇本 (包含旁白與視覺提示詞)
+            # 1. 使用 DeepSeek 生成劇本
             headers_ds = {"Authorization": f"Bearer {DEEPSEEK_API_KEY}", "Content-Type": "application/json"}
             ds_payload = {
                 "model": "deepseek-chat",
@@ -152,13 +152,12 @@ async def background_generate_course(request: VideoRequest, internal_task_id: st
             scenes = script_data.get("scenes", [])
             print(f"🎬 劇本規劃完成，場景數: {len(scenes)}")
 
-            # 2. 依次提交 Sora 任務並處理
+            # 2. 依次提交 Sora 任務
             final_course = []
             headers_sora = {"Authorization": f"Bearer {SORA_API_KEY}", "Content-Type": "application/json"}
             char_desc = get_character_desc(request.character)
 
             for idx, scene in enumerate(scenes):
-                # 準備視覺 Prompt
                 raw_prompt = f"{request.style} animation, {char_desc}, {scene['visual_prompt']}, high quality, educational video."
                 safe_prompt = clean_prompt_for_safety(raw_prompt)
                 
@@ -170,7 +169,7 @@ async def background_generate_course(request: VideoRequest, internal_task_id: st
                 sora_job_id = None
                 video_url = None
 
-                # 提交重試 (處理 SSE 格式與網路波動)
+                # 提交任務
                 for attempt in range(3):
                     try:
                         print(f"📤 提交場景 {idx+1} (嘗試 {attempt+1})...")
@@ -180,22 +179,16 @@ async def background_generate_course(request: VideoRequest, internal_task_id: st
                             json={"model": "sora-2", "prompt": safe_prompt},
                             timeout=180.0
                         )
-                        
                         raw_text = submit_res.text.strip()
-                        if not raw_text or "<html>" in raw_text.lower():
-                            continue
+                        if not raw_text or "<html>" in raw_text.lower(): continue
 
-                        # 核心解析邏輯：從 SSE 格式提取 ID
                         sora_job_id = extract_id_from_sse(raw_text)
-                        
-                        if sora_job_id:
-                            print(f"🎯 成功取得 Sora 任務 ID: {sora_job_id}")
-                            break
+                        if sora_job_id: break
                     except Exception as e:
                         print(f"⚠️ 提交失敗: {e}")
                     await asyncio.sleep(5)
 
-                # 進入輪詢或使用補救連結
+                # 輪詢結果
                 if sora_job_id:
                     video_url = await poll_video_url(sora_job_id, headers_sora)
                 
@@ -221,12 +214,10 @@ async def background_generate_course(request: VideoRequest, internal_task_id: st
 
 @app.get("/health")
 async def health():
-    """讓前端檢查後端是否活著"""
     return {"status": "online", "time": time.time()}
 
 @app.post("/generate-video")
 async def generate_video(request: VideoRequest, background_tasks: BackgroundTasks):
-    """前端點擊按鈕的入口"""
     internal_id = f"task_{int(time.time())}"
     task_results[internal_id] = {"status": "processing", "message": "任務已啟動"}
     background_tasks.add_task(background_generate_course, request, internal_id)
@@ -234,10 +225,9 @@ async def generate_video(request: VideoRequest, background_tasks: BackgroundTask
 
 @app.get("/task-status/{task_id}")
 async def get_task_status(task_id: str):
-    """前端輪詢後端進度的入口"""
     return task_results.get(task_id, {"status": "not_found"})
 
 if __name__ == "__main__":
     import uvicorn
-    # 增加 timeout_keep_alive 與 worker 穩定性
+    # 您最擔心的底部啟動代碼在這裡！
     uvicorn.run(app, host="0.0.0.0", port=8000, timeout_keep_alive=60)
