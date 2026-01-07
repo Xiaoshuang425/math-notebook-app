@@ -5,13 +5,13 @@ import asyncio
 import httpx
 import re
 from typing import List, Optional
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
 # --- 初始化與配置 ---
-# 從 .env 檔案讀取環境變數（如 API Key），保護敏資訊息避免不法分子不法分母不法分數綫來偷api
+# 從 .env 檔案讀取環境變數（如 API Key），保護訊息避免不法分子不法分母不法分數綫來偷api
 load_dotenv()
 
 # 初始化 FastAPI 
@@ -142,7 +142,7 @@ async def background_generate_course(request: VideoRequest, internal_task_id: st
     """背景執行緒：處理完整的生成流程（劇本規劃 -> 影片生成 -> 結果組合）"""
     async with httpx.AsyncClient(timeout=120.0) as client:
         try:
-            print(f"🚀 開始製作純中文課程: {request.topic}")
+            print(f"開始製作純中文課程: {request.topic}")
             # 更新任務狀態為「正在處理」
             task_results[internal_task_id] = {"status": "processing", "message": "正在規劃純中文教學劇本..."}
             
@@ -237,10 +237,10 @@ async def background_generate_course(request: VideoRequest, internal_task_id: st
 
 # --- API 路由 (Endpoints) ---
 
-@app.route("/health", methods=["GET", "HEAD"])
-async def health():
-    """健康檢查：讓雲端平台（如 Render）知道服務目前運行正常"""
-    return {"status": "online", "time": time.time()}
+@app.api_route("/health", methods=["GET", "HEAD"])
+async def health(request: Request = None):
+    # 修正重點：添加 request 參數，解決 TypeError
+    return {"status": "ok", "timestamp": time.time()}
 
 @app.post("/generate-video")
 async def generate_video(request: VideoRequest, background_tasks: BackgroundTasks):
