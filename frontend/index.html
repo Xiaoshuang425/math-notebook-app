@@ -31,10 +31,13 @@
         .message { max-width: 80%; padding: 0.75rem 1rem; border-radius: 1rem; font-size: 0.9rem; line-height: 1.5; word-wrap: break-word; }
         .message-ai { background: white; color: #334155; align-self: flex-start; border: 1px solid #e2e8f0; }
         .message-user { background: #3b82f6; color: white; align-self: flex-end; }
+        
+        .note-card { background: #fffbeb; border: 1px solid #fef3c7; padding: 1rem; border-radius: 1rem; margin-bottom: 1rem; }
     </style>
 </head>
 <body class="main-bg h-screen flex overflow-hidden">
 
+    <!-- 左側導覽列 -->
     <nav class="sidebar flex flex-col py-6 shrink-0">
         <div class="px-8 mb-8 flex items-center text-blue-600 font-bold text-xl italic">
             <i data-lucide="zap" class="mr-2 fill-blue-600"></i> KidAni AI
@@ -45,12 +48,14 @@
         <div data-target="flashcards" class="nav-item"><i data-lucide="layers"></i> 記憶卡片</div>
     </nav>
 
+    <!-- 中間配置面板 -->
     <aside class="config-panel shrink-0 p-6 flex flex-col space-y-6">
         <div class="flex items-center justify-between">
             <h2 class="text-xl font-bold text-slate-800">配置面板</h2>
-            <div id="backend-status" class="w-3 h-3 rounded-full bg-gray-300" title="後端連線狀態"></div>
+            <div id="backend-status" class="w-3 h-3 rounded-full bg-gray-300 transition-colors duration-500" title="正在檢測後端連線..."></div>
         </div>
         
+        <!-- 影片設定面板 -->
         <div id="panel-video" class="panel-content active space-y-4">
             <h3 class="font-bold text-sm text-blue-600">影片製作設定</h3>
             <div class="space-y-2">
@@ -78,20 +83,37 @@
             </button>
         </div>
 
+        <!-- 導師設定面板 -->
         <div id="panel-chat" class="panel-content space-y-4">
             <h3 class="font-bold text-sm text-blue-600">導師模式設定</h3>
             <p class="text-sm text-slate-500">對話設置已鎖定為「導師模式」。您可以直接輸入數學專有名詞或問題。</p>
         </div>
+
+        <!-- 筆記設定面板 -->
+        <div id="panel-notes" class="panel-content space-y-4">
+            <h3 class="font-bold text-sm text-blue-600">筆記整理工具</h3>
+            <button class="w-full py-3 border-2 border-dashed border-slate-200 rounded-xl text-xs text-slate-400 hover:border-blue-300 hover:text-blue-400 transition-all">
+                + 新增手寫心得
+            </button>
+        </div>
+
+        <!-- 卡片設定面板 -->
+        <div id="panel-flashcards" class="panel-content space-y-4">
+            <h3 class="font-bold text-sm text-blue-600">記憶強化設定</h3>
+            <p class="text-xs text-slate-500">複習間隔：24 小時</p>
+        </div>
     </aside>
 
+    <!-- 右側主要內容區 -->
     <main class="flex-grow p-8 overflow-hidden flex gap-6">
+        <!-- 動畫製片內容 -->
         <div id="tab-video" class="tab-content active flex-grow">
             <div class="space-y-6">
                 <div class="video-box flex items-center justify-center bg-slate-900">
-                    <div id="v-main-display" class="w-full h-full flex items-center justify-center">
-                        <div class="text-slate-500 text-center px-6">
-                            <p class="mb-2 font-bold text-slate-400">等待 API 連線...</p>
-                            <p class="text-xs">請點擊右上方「後端連線狀態」小圓點檢查。<br>若網址為預設值，請先更新 script 中的 API 變數。</p>
+                    <div id="v-main-display" class="w-full h-full flex items-center justify-center text-center">
+                        <div class="text-slate-500 px-6">
+                            <p class="mb-2 font-bold text-slate-400" id="conn-title">等待後端響應...</p>
+                            <p class="text-xs" id="conn-msg">連線檢測中...</p>
                         </div>
                     </div>
                     <div id="v-loader" class="hidden absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-white z-10">
@@ -117,6 +139,7 @@
             </div>
         </div>
 
+        <!-- 智能導師內容 -->
         <div id="tab-chat" class="tab-content flex-grow">
             <div class="max-w-3xl mx-auto chat-container">
                 <h1 class="text-2xl font-bold mb-4">智能導師解答室</h1>
@@ -129,51 +152,87 @@
                 </div>
             </div>
         </div>
+
+        <!-- 學霸筆記內容 -->
+        <div id="tab-notes" class="tab-content flex-grow">
+            <div class="max-w-4xl mx-auto">
+                <h1 class="text-2xl font-bold mb-6">我的學霸筆記</h1>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="note-card">
+                        <h4 class="font-bold text-amber-800 mb-2">📌 分數的重點</h4>
+                        <p class="text-sm text-amber-700">分子是在上面的數字，分母是在下面的數字。分母不能為零！</p>
+                    </div>
+                    <div class="note-card">
+                        <h4 class="font-bold text-amber-800 mb-2">📌 等值分數</h4>
+                        <p class="text-sm text-amber-700">1/2 等於 2/4，也等於 4/8。雖然數字不同，但代表的大小是一樣的。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 記憶卡片內容 -->
+        <div id="tab-flashcards" class="tab-content flex-grow">
+            <div class="flex flex-col items-center justify-center h-full">
+                <div class="w-80 h-48 bg-white shadow-xl rounded-3xl flex items-center justify-center text-center p-8 border-t-4 border-blue-500 cursor-pointer hover:scale-105 transition-transform">
+                    <div>
+                        <p class="text-xs text-slate-400 mb-4">點擊翻面</p>
+                        <h2 class="text-xl font-bold text-slate-800">什麼是真分數？</h2>
+                    </div>
+                </div>
+                <div class="mt-8 flex gap-4">
+                    <button class="px-6 py-2 bg-red-100 text-red-600 rounded-full text-sm font-bold">還不熟</button>
+                    <button class="px-6 py-2 bg-green-100 text-green-600 rounded-full text-sm font-bold">已記住</button>
+                </div>
+            </div>
+        </div>
     </main>
 
     <script>
         lucide.createIcons();
 
-        /**
-         * 重要：API 地址配置
-         * 請將下方的網址替換成您在 Railway 或 Render 部署後的後端網址
-         */
+        // --- API 地址配置 (強制使用 https) ---
         const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        // 確保 Render 網址使用 https://
         const API = isLocal ? "http://127.0.0.1:8000" : "https://math-notebook-app.onrender.com";
 
         let currentPlaylist = [];
 
-        // 預熱後端 (防止冷啟動)
+        // 監測連線狀態
         async function wakeUpBackend() {
             const dot = document.getElementById('backend-status');
-            if (!isLocal && API.includes("YOUR_ACTUAL_RENDER_URL")) {
-                dot.className = "w-3 h-3 rounded-full bg-yellow-400";
-                dot.title = "未配置 API 網址，請修改 index.html 中的 API 變數";
-                return;
-            }
+            const msg = document.getElementById('conn-msg');
+            const title = document.getElementById('conn-title');
+
             try {
-                // 使用 controller 避免 fetch 永久掛起
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 5000);
-                
-                const res = await fetch(`${API}/health`, { signal: controller.signal });
+                const timeoutId = setTimeout(() => controller.abort(), 8000);
+                const res = await fetch(`${API}/health`, { 
+                    method: 'GET',
+                    mode: 'cors',
+                    signal: controller.signal 
+                });
                 clearTimeout(timeoutId);
                 
                 if (res.ok) {
                     dot.className = "w-3 h-3 rounded-full bg-green-500";
                     dot.title = "後端連線正常";
+                    if(title) title.innerText = "✅ 後端已連線";
+                    if(msg) msg.innerHTML = "請輸入教學主題並點擊『製作影片』開始！";
                 } else {
-                    dot.className = "w-3 h-3 rounded-full bg-orange-500";
-                    dot.title = "後端有響應但狀態異常";
+                    throw new Error("伺服器回應錯誤");
                 }
             } catch (e) {
                 dot.className = "w-3 h-3 rounded-full bg-red-500";
-                dot.title = "連線失敗: " + e.message;
+                dot.title = "連線嘗試中: " + e.message;
+                if(title) title.innerText = "❌ 後端尚未回應";
+                if(msg) msg.innerHTML = "伺服器休眠中，請稍候 30-60 秒讓其喚醒...<br><span class='text-[10px] text-slate-400'>偵測到錯誤: " + e.message + "</span>";
             }
         }
+        
         wakeUpBackend();
-        setInterval(wakeUpBackend, 30000);
+        setInterval(wakeUpBackend, 25000);
 
+        // 切換分頁邏輯
         document.querySelectorAll('.nav-item').forEach(nav => {
             nav.onclick = () => {
                 const target = nav.getAttribute('data-target');
@@ -182,61 +241,63 @@
                 document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
                 const targetTab = document.getElementById(`tab-${target}`);
                 if (targetTab) targetTab.classList.add('active');
+                
                 document.querySelectorAll('.panel-content').forEach(p => p.classList.remove('active'));
                 const targetPanel = document.getElementById(`panel-${target}`);
-                if (targetPanel) targetPanel.classList.add('active');
+                if (targetPanel) {
+                    targetPanel.classList.add('active');
+                }
             };
         });
 
+        // 生成影片邏輯
         document.getElementById('v-gen').onclick = async () => {
-            if (!isLocal && API.includes("YOUR_ACTUAL_RENDER_URL")) {
-                alert("請先修改代碼中的 API 網址為您的後端部署地址。目前偵測為無效網址。");
-                return;
-            }
-
             const topic = document.getElementById('v-topic').value;
             const style = document.getElementById('v-style').value;
             const character = document.getElementById('v-character').value;
             
+            if (!topic) {
+                alert("請輸入教學主題！");
+                return;
+            }
+
             const loader = document.getElementById('v-loader');
-            const playlistEl = document.getElementById('v-playlist');
-            const statusText = document.getElementById('v-status');
-            
             loader.classList.remove('hidden');
-            statusText.innerText = "正在製作教學動畫，請耐心等候...";
-            playlistEl.innerHTML = "";
 
             try {
+                // 強制檢查連線是否還是通的
                 const res = await fetch(`${API}/generate-video`, {
                     method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ 
-                        topic: topic, 
-                        style: style, 
-                        character: character, 
-                        duration_minutes: 1 
-                    })
+                    mode: 'cors',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ topic, style, character, duration_minutes: 1 })
                 });
                 
-                if (!res.ok) throw new Error(`連線失敗 (HTTP ${res.status})，請確認後端已正常啟動。`);
+                if (!res.ok) {
+                    const errorText = await res.text();
+                    throw new Error(`伺服器回應錯誤 (${res.status}): ${errorText}`);
+                }
                 
                 const data = await res.json();
                 
                 if (data.type === 'qa') {
-                    alert("偵測到教學名詞，已為您切換至『智能導師』查看詳細解釋！");
+                    alert("偵測到教學名詞，已為您自動跳轉至『智能導師』解答！");
                     document.querySelector('[data-target="chat"]').click();
                     addMessage(data.answer);
                     return;
                 }
 
-                currentPlaylist = data.full_course ? data.full_course.filter(item => item.video_url) : [];
-                if (currentPlaylist.length === 0) throw new Error("影片尚未準備就緒，請重試。");
-
+                currentPlaylist = data.full_course ? data.full_course.filter(i => i.video_url) : [];
                 renderPlaylist();
-                playScene(0);
+                if (currentPlaylist.length > 0) playScene(0);
+                else alert("影片生成成功，但未獲得播放地址。");
+
             } catch (e) {
-                console.error(e);
-                alert("發生錯誤：" + e.message + "\n\n提示：如果是線上環境，請確認 API 變數已設定正確；如果是本地環境，請確認 backend/main.py 已啟動。");
+                console.error("生成錯誤詳情:", e);
+                alert(`【連線失敗】\n原因: ${e.message}\n\n這可能是因為：\n1. 伺服器正在處理中，請稍候再試。\n2. 瀏覽器封鎖了不安全連線 (請確認地址欄有鎖頭標誌)。`);
             } finally {
                 loader.classList.add('hidden');
             }
@@ -252,55 +313,42 @@
         }
 
         function playScene(index) {
-            if (!currentPlaylist[index]) return;
             const scene = currentPlaylist[index];
-            const display = document.getElementById('v-main-display');
-            const narration = document.getElementById('v-narration');
-            
+            if (!scene) return;
             document.querySelectorAll('.playlist-item').forEach(el => el.classList.remove('active'));
-            const activeItem = document.getElementById(`item-${index}`);
-            if (activeItem) activeItem.classList.add('active');
+            const targetItem = document.getElementById(`item-${index}`);
+            if(targetItem) targetItem.classList.add('active');
             
-            narration.innerHTML = `<b>【${scene.title}】</b><br>${scene.narration}`;
-            display.innerHTML = `<video id="active-video" src="${scene.video_url}" class="w-full h-full object-cover" controls autoplay></video>`;
-            
-            const video = document.getElementById('active-video');
-            video.onended = () => {
-                if (index + 1 < currentPlaylist.length) playScene(index + 1);
-            };
+            document.getElementById('v-narration').innerHTML = `<b>【${scene.title}】</b><br>${scene.narration}`;
+            document.getElementById('v-main-display').innerHTML = `
+                <video src="${scene.video_url}" class="w-full h-full object-cover" controls autoplay></video>
+            `;
         }
 
+        // 導師聊天邏輯
         document.getElementById('chat-send').onclick = async () => {
             const input = document.getElementById('chat-input');
-            if(!input.value) return;
             const text = input.value;
+            if(!text) return;
             addMessage(text, true);
             input.value = "";
             
             try {
                 const res = await fetch(`${API}/generate-video`, {
                     method: 'POST',
+                    mode: 'cors',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ 
-                        topic: text, 
-                        style: "Disney 3D Animation Style", 
-                        duration_minutes: 0 
-                    })
+                    body: JSON.stringify({ topic: text, style: "3D", duration_minutes: 0 })
                 });
-                
-                if (!res.ok) throw new Error("連線異常");
-                
                 const data = await res.json();
-                
-                if (data.type === 'qa') {
-                    addMessage(data.answer);
-                } else {
-                    addMessage("這是一個很棒的主題！我已經為您準備好了教學動畫，請點擊左側『動畫製片』查看新生成的影片清單。");
+                if (data.type === 'qa') addMessage(data.answer);
+                else {
+                    addMessage("這是個好題目！我已為您製作了教學動畫，請切換至『動畫製片』查看。");
                     currentPlaylist = data.full_course;
                     renderPlaylist();
                 }
             } catch (e) {
-                addMessage("抱歉，目前無法與智能導師取得連線。請檢查網路或確認後端服務。");
+                addMessage("連線異常，請檢查伺服器狀態。");
             }
         };
 
