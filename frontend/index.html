@@ -127,7 +127,16 @@
 
     <script>
         lucide.createIcons();
-        const API = "http://127.0.0.1:8000";
+
+        /**
+         * 部署優化：動態獲取 API 地址
+         * 如果是在本地運行，預設為 127.0.0.1
+         * 如果部署到 Vercel，請在 Vercel 後台設定 VITE_API_URL 或使用 window.location 邏輯
+         */
+        const API = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+                    ? "http://127.0.0.1:8000" 
+                    : "https://math-notebook-app.onrender.com"; // 這裡部署後請更換為 Railway 或其他雲端地址
+
         let currentPlaylist = [];
 
         document.querySelectorAll('.nav-item').forEach(nav => {
@@ -158,7 +167,6 @@
             playlistEl.innerHTML = "";
 
             try {
-                console.log("正在發送請求到後端...", { topic, style, character });
                 const res = await fetch(`${API}/generate-video`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
@@ -170,28 +178,17 @@
                     })
                 });
                 
-                if (!res.ok) {
-                    const errText = await res.text();
-                    console.error("後端回報錯誤:", errText);
-                    throw new Error(`後端連線失敗: ${res.status}`);
-                }
+                if (!res.ok) throw new Error(`後端連線失敗: ${res.status}`);
                 
                 const data = await res.json();
-                console.log("後端返回原始數據:", data);
-                
-                // 過濾出擁有影片網址的場景
                 currentPlaylist = data.full_course ? data.full_course.filter(item => item.video_url) : [];
                 
-                if (currentPlaylist.length === 0) {
-                    console.warn("劇本已生成，但影片生成任務可能超時或失敗。請檢查後端日誌。");
-                    throw new Error("影片生成失敗 (無有效網址)");
-                }
+                if (currentPlaylist.length === 0) throw new Error("影片生成失敗 (無有效網址)");
 
                 renderPlaylist();
                 playScene(0);
             } catch (e) {
-                console.error("執行過程發生異常:", e);
-                alert("錯誤：" + e.message + "\n請確認後端 Python 程式已啟動且網路連線正常。");
+                alert("錯誤：" + e.message);
             } finally {
                 loader.classList.add('hidden');
             }
